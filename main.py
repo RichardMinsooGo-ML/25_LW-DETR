@@ -22,16 +22,18 @@ import ast
 import copy
 from pathlib import Path
 
+from copy import deepcopy
+
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, DistributedSampler
 
+import util.misc as utils
 from datasets import build_dataset, get_coco_api_from_dataset
 from engine import evaluate, train_one_epoch
 from models import build_model
 from util.drop_scheduler import drop_scheduler
 from util.get_param_dicts import get_param_dict
-import util.misc as utils
 from util.utils import ModelEma, BestMetricHolder, clean_state_dict
 from util.benchmark import benchmark
 
@@ -42,7 +44,7 @@ def get_args_parser():
     parser.add_argument('--lr_encoder', default=1.5e-4, type=float)
     parser.add_argument('--batch_size', default=2, type=int)
     parser.add_argument('--weight_decay', default=1e-4, type=float)
-    parser.add_argument('--epochs', default=12, type=int)
+    parser.add_argument('--epochs', default=50, type=int)
     parser.add_argument('--lr_drop', default=11, type=int)
     parser.add_argument('--clip_max_norm', default=0.1, type=float,
                         help='gradient clipping max norm')
@@ -188,6 +190,7 @@ def main(args):
     print("git:\n  {}\n".format(utils.get_sha()))
     print(args)
 
+    # ---------------------------- Build CUDA ----------------------------
     device = torch.device(args.device)
 
     # fix the seed for reproducibility
